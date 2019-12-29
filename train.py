@@ -22,13 +22,19 @@ iteration_count = 0
 while True:
 
     state =  env.reset()
-    threshold = 0.3
+    threshold = 0.25
     env.env.theta_threshold_radians = threshold
 
     if iteration_count % 50 == 0:
         target_net.load_state_dict(agent.state_dict())
         print (iteration_count)
         print ("updating target network")
+
+    if iteration_count % 200 == 0:
+        print ("Saving model")
+        torch.save(agent.state_dict(), "checkpoints/model_" + str(iteration_count) + ".pt")
+
+    longevity = 0
     
     while True:
 
@@ -40,6 +46,7 @@ while True:
         done = int(done)
         reward = correct_rewards(observation, threshold / 2)
 
+        longevity += 1
 
         action_tensor = torch.Tensor([action])
         next_state_tensor = torch.Tensor(next_state)
@@ -63,3 +70,4 @@ while True:
             break
 
     iteration_count += 1
+    print ("Episode len: ", longevity)
