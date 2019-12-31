@@ -7,7 +7,7 @@ import numpy as np
 from .replay_buffer import ReplayBuffer
 
 class DQNAgent(nn.Module):
-    def __init__(self, state_space, action_space, eps=0.99, lr=1e-3, buf_len=1000, gamma=0.8):
+    def __init__(self, state_space, action_space, eps=0.99, lr=1e-3, buf_len=1000, gamma=0.99, decay=0.99):
         super(DQNAgent, self).__init__()
 
         self.state_space = state_space
@@ -16,10 +16,11 @@ class DQNAgent(nn.Module):
         self.lr = lr
         self.replay_memory = ReplayBuffer(buf_len=buf_len)
 
-        self.lin1 = nn.Linear(state_space, 10)
-        self.lin2 = nn.Linear(10, action_space)
+        self.lin1 = nn.Linear(state_space, 256)
+        self.lin1_ = nn.Linear(256, 64)
+        self.lin2 = nn.Linear(64, action_space)
         self.gamma = gamma
-
+        self.decay = decay
 
     def store_experience(self, experience):
         """
@@ -36,6 +37,7 @@ class DQNAgent(nn.Module):
         """
 
         x = torch.relu(self.lin1(x))
+        x = torch.relu(self.lin1_(x))
         x = self.lin2(x)
 
         return x
@@ -59,8 +61,11 @@ class DQNAgent(nn.Module):
 
             #print ("selecting greedy action")
 
-        if (self.eps > 0.1):
-            self.eps *= 0.99
 
         return action
+
+
+    def anneal_eps(self):
+        if (self.eps > 0.1):
+            self.eps *= self.decay
         
