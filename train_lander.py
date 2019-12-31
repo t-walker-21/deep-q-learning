@@ -28,7 +28,7 @@ criterion = torch.nn.MSELoss()
 opt = torch.optim.Adam(agent.parameters(), lr = 1e-3)
 batch_size = 64
 save_rate = 100
-update_rate = 15
+update_rate = 35
 
 iteration_count = 0
 x = threading.Thread(target=thread_function)
@@ -59,6 +59,7 @@ while iteration_count < 100000:
 
         observation = env.step(action)
         next_state, reward, done, _ = observation
+        reward *= 0.1
 
         done = int(done)
 
@@ -82,7 +83,11 @@ while iteration_count < 100000:
         state = next_state
 
         if (len(agent.replay_memory.buffer) >= batch_size):
-            learn(agent, target_net, opt, criterion, batch_size)
+
+            loss = learn(agent, target_net, opt, criterion, batch_size)
+
+            if (iteration_count % 5 == 0):
+                print ("Loss: ", loss)
 
         if done:
             break
