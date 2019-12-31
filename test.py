@@ -9,8 +9,12 @@ env = gym.make('CartPole-v0')
 
 render = True
 
-agent = DQNAgent(4, 2, buf_len=10, eps=0.99)
-agent.load_state_dict(torch.load("checkpoints/model_0.pt"))
+agent = DQNAgent(4, 2, buf_len=10, eps=0.0)
+agent.load_state_dict(torch.load("checkpoints/cartpole/model_200.pt"))
+
+# Alter environment
+env.env.masscart *= 1
+env.env.masspole *= 1e1
 
 while True:
 
