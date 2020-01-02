@@ -1,10 +1,10 @@
 """
-Class defintion for q learning agent
+Class defintion for q learning agent and policy gradient agent
 """
 import torch
 import torch.nn as nn
 import numpy as np
-from .replay_buffer import ReplayBuffer
+from torch.distributions import Categorical
 
 class DQNAgent(nn.Module):
     def __init__(self, state_space, action_space, eps=0.99, lr=1e-3, buf_len=1000, gamma=0.99, decay=0.99):
@@ -16,9 +16,9 @@ class DQNAgent(nn.Module):
         self.lr = lr
         self.replay_memory = ReplayBuffer(buf_len=buf_len)
 
-        self.lin1 = nn.Linear(state_space, 256)
-        self.lin1_ = nn.Linear(256, 64)
-        self.lin2 = nn.Linear(64, action_space)
+        self.lin1 = nn.Linear(state_space, 512)
+        self.lin1_ = nn.Linear(512, 256)
+        self.lin2 = nn.Linear(256, action_space)
         self.gamma = gamma
         self.decay = decay
 
@@ -69,3 +69,56 @@ class DQNAgent(nn.Module):
         if (self.eps > 0.1):
             self.eps *= self.decay
         
+
+class PGAgent(nn.Module):
+    """
+
+    Class implementation for policy gradient
+    """
+
+    def __init__(self, state_space, action_space, hidden_dim=128):
+        super(PGAgent, self).__init__()
+
+        self.state_space = state_space
+        self.action_space = action_space
+
+        # Policy network
+        self.lin1 = nn.Linear(state_space, hidden_dim)
+        self.lin2 = nn.Linear(hidden_dim, action_space)
+
+        # Storage for trajectory rollout
+        self.rewards = []
+        self.log_probs = []
+
+    def forward(self, x):
+        """
+
+        Forward pass for policy network
+        """
+        x = torch.relu(self.lin1(x))
+        x = self.lin2(x)
+
+        probs = torch.softmax(x, dim=0)
+
+        return probs
+
+
+    def select_action(self, state):
+        """
+
+        Probablistically select action according to policy
+        """
+        probs = self.forward(state)
+        dist = Categorical(probs)
+        action = dist.sample()
+
+        log_prob_tensor = torch.log(dist.probs[action])
+        #log_prob_tensor.requires_grad = True
+
+        self.log_probs.append(log_prob_tensor)
+
+        return action
+
+    def flush_buffers(self):
+        self.rewards = []
+        self.log_probs = []
