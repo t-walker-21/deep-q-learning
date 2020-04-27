@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torch.distributions import Categorical
+from model.replay_buffer import ReplayBuffer
 
 class DQNAgent(nn.Module):
     def __init__(self, state_space, action_space, eps=0.99, lr=1e-3, buf_len=1000, gamma=0.99, decay=0.99):
