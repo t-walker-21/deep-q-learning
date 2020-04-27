@@ -7,11 +7,18 @@ import numpy as np
 
 render = True
 
+if torch.cuda.is_available():
+	device = 'cuda' 
+
+else: 
+	device = 'cpu'
+
+
 # Instantiate agent and environment
 
 env = gym.make('LunarLander-v2')
 
-agent = PGAgent(8, 4, 32)
+agent = PGAgent(8, 4, 32).to(device)
 
 GAMMA = 0.9
 
@@ -51,7 +58,7 @@ def reinforce(agent):
 
 	# Calculate loss
 
-	loss = torch.zeros(1)
+	loss = torch.zeros(1).to(device)
 
 	t = 0
 	for G_t, log_prob in zip(norm_rewards, agent.log_probs):
@@ -80,7 +87,7 @@ while True:
 		if (render):
 			env.render()
 
-		state_tensor = torch.Tensor(state)
+		state_tensor = torch.Tensor(state).to(device)
 		action_tensor = agent.select_action(state_tensor)
 		action = action_tensor.item()
 		observation = env.step(action)
