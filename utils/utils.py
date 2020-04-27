@@ -4,6 +4,7 @@ Utilities for dqn training
 """
 import numpy as np
 import torch
+import cv2
 
 def correct_rewards(tup, threshold):
     """
@@ -69,6 +70,48 @@ def learn(agent, target, opt, criterion, batch_size, device):
     loss = criterion(q_values, targets)
 
     #print (loss)
+
+    opt.zero_grad()
+
+    loss.backward()
+
+    opt.step()
+    
+    return loss
+
+def learn_image(agent, target, opt, criterion, batch_size, device):
+    """
+
+    Optimize agent 
+    """
+
+    # Get batch of data
+
+    batch_state, batch_action, batch_reward, batch_next_state, batch_done = agent.replay_memory.sample(batch_size)
+
+    # Dissect batch
+
+    batch_state = torch.tensor(batch_state).view(batch_size, 1, 100, 100).to(device).float()
+    batch_next_state = torch.tensor(batch_next_state).view(batch_size, 1, 100, 100).to(device).float()
+    batch_action = torch.tensor(batch_action).to(device).long().view(batch_size, 1)
+    batch_reward = torch.tensor(batch_reward).to(device).float()
+    batch_done = torch.tensor(batch_done).to(device).float()
+
+    # Get Q-values
+
+    q_values = agent(batch_state).gather(1, batch_action)
+
+    # Get target values
+
+    mask = 1 - batch_done
+
+    target_val = torch.max(target(batch_next_state), dim=1)[0].view(batch_size, -1)
+    targets = batch_reward + mask * (agent.gamma * target_val)
+
+    loss = criterion(q_values, targets)
+
+    #print ("loss")
+    print (loss.item())
 
     opt.zero_grad()
 
