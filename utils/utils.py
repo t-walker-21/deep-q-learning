@@ -23,7 +23,7 @@ def correct_rewards(tup, threshold):
     
     return reward
 
-def learn(agent, target, opt, criterion, batch_size):
+def learn(agent, target, opt, criterion, batch_size, device):
     """
 
     Optimize agent 
@@ -49,11 +49,11 @@ def learn(agent, target, opt, criterion, batch_size):
         next_state_batch = torch.cat([next_state_batch, exp[agent.state_space + 2:agent.state_space * 2 + 2]])
         done_batch = torch.cat([done_batch, exp[-1].view(-1)])
 
-    state_batch = state_batch.view(batch_size + 1, -1)[1:]
-    action_batch = action_batch.view(batch_size + 1, -1)[1:].long()
-    reward_batch = reward_batch.view(batch_size + 1, -1)[1:]
-    next_state_batch = next_state_batch.view(batch_size + 1, -1)[1:]
-    done_batch = done_batch.view(batch_size + 1, -1)[1:]
+    state_batch = state_batch.view(batch_size + 1, -1)[1:].to(device)
+    action_batch = action_batch.view(batch_size + 1, -1)[1:].long().to(device)
+    reward_batch = reward_batch.view(batch_size + 1, -1)[1:].to(device)
+    next_state_batch = next_state_batch.view(batch_size + 1, -1)[1:].to(device)
+    done_batch = done_batch.view(batch_size + 1, -1)[1:].to(device)
 
     # Get Q-values
 
@@ -76,3 +76,4 @@ def learn(agent, target, opt, criterion, batch_size):
 
     opt.step()
     
+    return loss
