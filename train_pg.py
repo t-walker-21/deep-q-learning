@@ -7,13 +7,22 @@ import numpy as np
 
 render = True
 
+# Set device
+
+if torch.cuda.is_available():
+	device = 'cuda' 
+
+else: 
+	device = 'cpu'
+
 # Instantiate agent and environment
 
 env = gym.make('CartPole-v0')
-threshold = 0.35
+threshold = 0.25
 env.env.theta_threshold_radians = threshold
 
-agent = PGAgent(4, 2, 16)
+
+agent = PGAgent(4, 2, 16).to(device)
 
 GAMMA = 0.9
 
@@ -53,7 +62,7 @@ def reinforce(agent):
 
 	# Calculate loss
 
-	loss = torch.zeros(1)
+	loss = torch.zeros(1).to(device)
 
 	t = 0
 	for G_t, log_prob in zip(norm_rewards, agent.log_probs):
@@ -81,7 +90,7 @@ while True:
 		if (render):
 			env.render()
 
-		state_tensor = torch.Tensor(state)
+		state_tensor = torch.Tensor(state).to(device)
 		action_tensor = agent.select_action(state_tensor)
 		action = action_tensor.item()
 		observation = env.step(action)
