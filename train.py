@@ -16,9 +16,18 @@ def get_user_input():
 env = gym.make('CartPole-v0')
 
 render = False
+device = None
 
-agent = DQNAgent(4, 2, buf_len=10000, eps=0.1, decay=0.995)
-target_net = DQNAgent(4, 2, buf_len=1000000)
+
+if torch.cuda.is_available():
+    device = 'cuda'
+
+else:
+    device = 'cpu'
+
+
+agent = DQNAgent(4, 2, buf_len=10000, eps=0.7, decay=0.99).to(device)
+target_net = DQNAgent(4, 2, buf_len=1000000).to(device)
 target_net.load_state_dict(agent.state_dict())
 
 criterion = torch.nn.MSELoss()
@@ -44,7 +53,7 @@ while True:
         print ("updating target network")
         print ("espilon: ", agent.eps)
 
-    if iteration_count % 200 == 0:
+    if iteration_count % 20 == 0:
         print ("Saving model")
         torch.save(agent.state_dict(), "checkpoints/cartpole/model_" + str(iteration_count) + ".pt")
 
@@ -52,7 +61,7 @@ while True:
     
     while True:
 
-        state_tensor = torch.Tensor(state)
+        state_tensor = torch.Tensor(state).to(device)
         action = agent.choose_action(state_tensor)
 
         observation = env.step(action)
@@ -68,7 +77,7 @@ while True:
         done_tensor = torch.Tensor(np.array([done]))
 
 
-        experience = torch.cat([state_tensor, action_tensor, reward_tensor, next_state_tensor, done_tensor])
+        experience = torch.cat([state_tensor.cpu().detach(), action_tensor, reward_tensor, next_state_tensor, done_tensor])
         agent.store_experience(experience)
 
 
@@ -78,7 +87,7 @@ while True:
         state = next_state
 
         if (len(agent.replay_memory.buffer) >= batch_size):
-            learn(agent, target_net, opt, criterion, batch_size)
+            learn(agent, target_net, opt, criterion, batch_size, device)
 
         if done:
             break
