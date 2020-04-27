@@ -16,26 +16,31 @@ def thread_function():
 global render
 render = False
 
-print (env.observation_space)
-print (env.action_space)
+device = None
 
 
-agent = DQNAgent(8, 4, buf_len=int(1e5), eps=0.99, decay=0.995)
-target_net = DQNAgent(8, 4, buf_len=1)
+if torch.cuda.is_available():
+    device = 'cuda'
+
+else:
+    device = 'cpu'
+
+agent = DQNAgent(8, 4, buf_len=int(1e6), eps=0.99, decay=0.995, gamma=0.99).to(device)
+target_net = DQNAgent(8, 4, buf_len=1).to(device)
 target_net.load_state_dict(agent.state_dict())
 
 criterion = torch.nn.MSELoss()
-opt = torch.optim.Adam(agent.parameters(), lr = 1e-3)
+opt = torch.optim.Adam(agent.parameters(), lr = 5e-4)
 batch_size = 64
 save_rate = 100
-update_rate = 35
+update_rate = 20
 
 iteration_count = 0
 x = threading.Thread(target=thread_function)
 x.start()
 
 
-while iteration_count < 100000:
+while True:
 
     state =  env.reset()
 
@@ -54,12 +59,15 @@ while iteration_count < 100000:
     
     while True:
 
-        state_tensor = torch.Tensor(state)
+        state_tensor = torch.Tensor(state).to(device)
         action = agent.choose_action(state_tensor)
-
         observation = env.step(action)
         next_state, reward, done, _ = observation
-        reward *= 0.1
+        #reward *= 1.0
+        
+
+        if (action > 0):
+            reward -= 5
 
         done = int(done)
 
@@ -73,7 +81,7 @@ while iteration_count < 100000:
         done_tensor = torch.Tensor(np.array([done]))
 
 
-        experience = torch.cat([state_tensor, action_tensor, reward_tensor, next_state_tensor, done_tensor])
+        experience = torch.cat([state_tensor.cpu().detach(), action_tensor, reward_tensor, next_state_tensor, done_tensor])
         agent.store_experience(experience)
 
 
@@ -84,10 +92,11 @@ while iteration_count < 100000:
 
         if (len(agent.replay_memory.buffer) >= batch_size):
 
-            loss = learn(agent, target_net, opt, criterion, batch_size)
+            loss = learn(agent, target_net, opt, criterion, batch_size, device)
 
             if (iteration_count % 5 == 0):
-                print ("Loss: ", loss)
+                pass
+                #print ("Loss: ", loss)
 
         if done:
             break
