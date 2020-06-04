@@ -4,9 +4,11 @@ from utils.utils import correct_rewards, learn
 import torch
 import numpy as np
 import threading
+import os
 
 env = gym.make('CartPole-v0')
 env = gym.make('LunarLander-v2')
+checkpoint_dir = "checkpoints/lunarLander/"
 
 def thread_function():
     while True:
@@ -39,10 +41,13 @@ iteration_count = 0
 x = threading.Thread(target=thread_function)
 x.start()
 
+# Create checkpoints folder if it doesn't exist.
+if not os.path.exists(checkpoint_dir):
+    os.mkdir(checkpoint_dir)
 
 while True:
 
-    state =  env.reset()
+    state = env.reset()
 
 
     if iteration_count % update_rate == 0:
@@ -53,7 +58,7 @@ while True:
 
     if iteration_count % save_rate == 0:
         print ("Saving model")
-        torch.save(agent.state_dict(), "checkpoints/lunarLander/model_" + str(iteration_count) + ".pt")
+        torch.save(agent.state_dict(), checkpoint_dir + "model_" + str(iteration_count) + ".pt")
 
     longevity = []
     

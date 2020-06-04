@@ -5,6 +5,7 @@ import torch
 import time
 import numpy as np
 import threading
+import os
 
 
 def get_user_input():
@@ -14,6 +15,7 @@ def get_user_input():
 
 
 env = gym.make('CartPole-v0')
+checkpoint_dir = "checkpoints/cartpole/"
 
 render = False
 device = None
@@ -41,6 +43,10 @@ thread_var = False
 x = threading.Thread(target=get_user_input)
 x.start()
 
+# Create checkpoints folder if it doesn't exist.
+if not os.path.exists(checkpoint_dir):
+    os.mkdir(checkpoint_dir)
+
 while True:
 
     state =  env.reset()
@@ -55,7 +61,7 @@ while True:
 
     if iteration_count % 20 == 0:
         print ("Saving model")
-        torch.save(agent.state_dict(), "checkpoints/cartpole/model_" + str(iteration_count) + ".pt")
+        torch.save(agent.state_dict(), checkpoint_dir + "model_" + str(iteration_count) + ".pt")
 
     longevity = 0
     
