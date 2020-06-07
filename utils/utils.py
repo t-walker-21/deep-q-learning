@@ -6,7 +6,8 @@ import numpy as np
 import torch
 import cv2
 
-def correct_rewards(tup, threshold):
+
+def correct_rewards(tup, threshold, thres_tup=None):
     """
 
     I want my cartpole reward to be such that:
@@ -21,8 +22,17 @@ def correct_rewards(tup, threshold):
 
     else:
         reward = 0
-    
+
     return reward
+
+
+def correct_rewards_alt(tup, threshold_array):
+    reward = 0
+    for i, _ in enumerate(tup):
+        reward += 1 - abs(tup[i]) / threshold_array[i]
+    reward = reward / len(tup)
+    return reward
+
 
 def learn(agent, target, opt, criterion, batch_size, device):
     """
@@ -35,7 +45,7 @@ def learn(agent, target, opt, criterion, batch_size, device):
     batch = agent.replay_memory.sample(batch_size)
 
     # Dissect batch
-
+    # TODO: IMPLEMENT SLICING?
     state_batch = batch[0][:agent.state_space]
     action_batch = batch[0][agent.state_space].view(-1)
     reward_batch = batch[0][agent.state_space + 1].view(-1)

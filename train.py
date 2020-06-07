@@ -1,6 +1,6 @@
 import gym
 from model.model import DQNAgent
-from utils.utils import correct_rewards, learn
+from utils.utils import correct_rewards, learn, correct_rewards_alt
 import torch
 import time
 import numpy as np
@@ -28,7 +28,8 @@ else:
     device = 'cpu'
 
 
-agent = DQNAgent(4, 2, buf_len=10000, eps=0.7, decay=0.99).to(device)
+# agent = DQNAgent(4, 2, buf_len=10000, eps=0.7, decay=0.99).to(device)
+agent = DQNAgent(4, 2, buf_len=40000, eps=0.9, decay=0.995).to(device)
 target_net = DQNAgent(4, 2, buf_len=1000000).to(device)
 target_net.load_state_dict(agent.state_dict())
 
@@ -43,13 +44,16 @@ thread_var = False
 x = threading.Thread(target=get_user_input)
 x.start()
 
+# max_values = [np.NINF] * 4
+threshold_array = np.array([2.4, 4.4, 0.4, 3.8]) / 2
+
 # Create checkpoints folder if it doesn't exist.
 if not os.path.exists(checkpoint_dir):
     os.mkdir(checkpoint_dir)
 
 while True:
 
-    state =  env.reset()
+    state = env.reset()
     threshold = 0.35
     env.env.theta_threshold_radians = threshold
 
@@ -58,6 +62,7 @@ while True:
         print (iteration_count)
         print ("updating target network")
         print ("espilon: ", agent.eps)
+        # print(max_values)
 
     if iteration_count % 20 == 0:
         print ("Saving model")
@@ -73,7 +78,8 @@ while True:
         observation = env.step(action)
         next_state, _, done, _ = observation
         done = int(done)
-        reward = correct_rewards(observation, threshold / 2)
+        # reward = correct_rewards(observation, threshold / 2)
+        reward = correct_rewards_alt(observation[0], threshold_array)
 
         longevity += 1
 
@@ -82,6 +88,9 @@ while True:
         reward_tensor = torch.Tensor(np.array([reward]))
         done_tensor = torch.Tensor(np.array([done]))
 
+        for i, _ in enumerate(observation):
+            if abs(observation[0][i]) > max_values[i]:
+                max_values[i] = abs(observation[0][i])
 
         experience = torch.cat([state_tensor.cpu().detach(), action_tensor, reward_tensor, next_state_tensor, done_tensor])
         agent.store_experience(experience)
