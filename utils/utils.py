@@ -89,7 +89,7 @@ def learn(agent, target, opt, criterion, batch_size, device):
     
     return loss
 
-def learn_image(agent, target, opt, criterion, batch_size, device):
+def learn_image(agent, target, opt, criterion, batch_size, device, image_shape=(100,100)):
     """
 
     Optimize agent 
@@ -101,7 +101,7 @@ def learn_image(agent, target, opt, criterion, batch_size, device):
 
     # Dissect batch
 
-    batch_state = torch.tensor(batch_state).view(batch_size, 1, 100, 100).to(device).float()
+    batch_state = torch.tensor(batch_state).view(batch_size, 1, image_shape[0], image_shape[1]).to(device).float()
     batch_next_state = torch.tensor(batch_next_state).view(batch_size, 1, 100, 100).to(device).float()
     batch_action = torch.tensor(batch_action).to(device).long().view(batch_size, 1)
     batch_reward = torch.tensor(batch_reward).to(device).float()

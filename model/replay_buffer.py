@@ -6,6 +6,7 @@ import random
 import collections
 import numpy as np
 
+
 class ReplayBuffer(object):
 	def __init__(self, buf_len=1000):
 		"""
@@ -43,6 +44,7 @@ class ReplayBuffer(object):
 
 		self.buffer = collections.deque(maxlen=self.buf_len)
 
+
 class ReplayBufferMulti(object):
 	"""
 
@@ -55,16 +57,17 @@ class ReplayBufferMulti(object):
 		"""
 		super(ReplayBufferMulti, self).__init__()
 
-		state_size_overall = (buf_len, state_size[0], state_size[1])
+		self.state_size_overall = (buf_len,) + state_size
 
 		self.buf_len = buf_len
 		self.ptr = 0
-		self.buffer_state = np.zeros(state_size_overall)
+		self.count = 0
+		self.buffer_state = np.zeros(self.state_size_overall)
 		self.buffer_action = np.zeros(buf_len)
 		self.buffer_reward = np.zeros(buf_len)
-		self.buffer_next_state = np.zeros(state_size_overall)
+		self.buffer_next_state = np.zeros(self.state_size_overall)
 		self.buffer_done = np.zeros(buf_len)
-		self.state_size=state_size
+		self.state_size = state_size
 		self.ready = False
 
 	def store_experience(self, experience):
@@ -80,9 +83,9 @@ class ReplayBufferMulti(object):
 		self.buffer_done[self.ptr % self.buf_len] = experience[4]
 
 		self.ptr += 1
+		self.count += 1
 
-		if self.ptr == self.buf_len:
-			self.ptr = 0
+		if self.count == self.buf_len:
 			self.ready = True
 
 	def sample(self, batch_size):
@@ -108,13 +111,24 @@ class ReplayBufferMulti(object):
 		"""
 
 		self.ptr = 0
-		self.buffer_state = np.zeros_like(self.state_size, buf_len)
-		self.buffer_action = np.zeros(buf_len)
-		self.buffer_reward = np.zeros(buf_len)
-		self.buffer_next_state = np.zeros_like(self.state_size, buf_len)
-		self.buffer_done = np.zeros(buf_len)
+		self.count = 0
+		self.buffer_state = np.zeros_like(self.buffer_state)
+		self.buffer_action = np.zeros(self.buffer_action)
+		self.buffer_reward = np.zeros(self.buffer_reward)
+		self.buffer_next_state = np.zeros_like(self.buffer_next_state)
+		self.buffer_done = np.zeros(self.buffer_done)
 
 		self.ready = False
 
 	def is_ready(self):
 		return self.ready
+
+	def drop_buffer(self, percent=None, amount=None):
+		if percent is not None:
+			self.count = int(self.count * (1-percent))
+			self.ready = False
+		elif amount is not None:
+			self.count = int(self.count - amount)
+			self.ready = False
+
+
