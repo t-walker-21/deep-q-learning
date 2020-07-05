@@ -5,6 +5,7 @@ Utilities for dqn training
 import numpy as np
 import torch
 import cv2
+import logging
 
 
 def correct_rewards(tup, threshold, thres_tup=None):
@@ -102,7 +103,7 @@ def learn_image(agent, target, opt, criterion, batch_size, device, image_shape=(
     # Dissect batch
 
     batch_state = torch.tensor(batch_state).view(batch_size, 1, image_shape[0], image_shape[1]).to(device).float()
-    batch_next_state = torch.tensor(batch_next_state).view(batch_size, 1, 100, 100).to(device).float()
+    batch_next_state = torch.tensor(batch_next_state).view(batch_size, 1, image_shape[0], image_shape[1]).to(device).float()
     batch_action = torch.tensor(batch_action).to(device).long().view(batch_size, 1)
     batch_reward = torch.tensor(batch_reward).to(device).float()
     batch_done = torch.tensor(batch_done).to(device).float()
@@ -121,7 +122,7 @@ def learn_image(agent, target, opt, criterion, batch_size, device, image_shape=(
     loss = criterion(q_values, targets)
 
     #print ("loss")
-    print (loss.item())
+    logging.info(f"loss.item(): {loss.item()}")
 
     opt.zero_grad()
 

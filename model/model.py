@@ -126,6 +126,7 @@ class PGAgent(nn.Module):
         self.rewards = []
         self.log_probs = []
 
+
 class DQNConvAgent(nn.Module):
     def __init__(self, state_space, action_space, eps=0.99, lr=1e-3, buf_len=1000, gamma=0.7, decay=0.99):
         super(DQNConvAgent, self).__init__()
@@ -149,11 +150,13 @@ class DQNConvAgent(nn.Module):
         w_out = int((w_in + 2*0 - 1 * (kernel-1) - 1) / stride + 1)
         logging.debug(f"h_in: {h_in}, w_in: {w_in}")
         logging.debug(f"h_out: {h_out}, w_out: {w_out}")
-        self.linear_in = int(h_out * w_out * c_out)
+        self.conv_out = int(h_out * w_out * c_out)
+        self.linear_in = self.conv_out + w_in
         # self.lin1 = nn.Linear(7744, 512)
         # self.lin1_ = nn.Linear(512, 256)
         # self.lin2 = nn.Linear(256, action_space)
         logging.debug(f"action_space: {action_space}")
+        logging.debug(f"self.conv_out: {self.conv_out}")
         logging.debug(f"self.linear_in: {self.linear_in}")
         self.lin1 = nn.Linear(in_features=self.linear_in, out_features=action_space)
         self.gamma = gamma
@@ -172,8 +175,12 @@ class DQNConvAgent(nn.Module):
 
         Forward pass of DQN
         """
-
+        top_row = x[:, :, 0, :]
+        # logging.debug(f"top_row: {top_row}")
         x = torch.relu(self.conv1(x))
+        x = x.view(x.shape[0], -1)
+        top_row = top_row.view(top_row.shape[0], -1)
+        x = torch.cat((x, top_row), dim=1)
 
         # x = torch.relu(self.conv2(x))
         # x = torch.relu(self.conv3(x))
@@ -185,11 +192,11 @@ class DQNConvAgent(nn.Module):
         #cv2.imshow("conv", view)
         #cv2.waitKey(1)
 
-        x = x.view(-1, self.linear_in)
-        logging.debug(f"x before lin1: {x}")
-        logging.debug(f"x.shape: {x.shape}")
+        # x = x.view(-1, self.conv_out)
+        # logging.debug(f"x before lin1: {x}")
+        # logging.debug(f"x.shape: {x.shape}")
         x = self.lin1(x)
-        logging.debug(f"x after lin1: {x}")
+        # logging.debug(f"x after lin1: {x}")
         # x = torch.relu(self.lin1_(x))
         # x = self.lin2(x)
 
@@ -203,15 +210,15 @@ class DQNConvAgent(nn.Module):
         action = None
 
         if (self.eps > np.random.rand()): # Select random action if eps happened
-            logging.debug(f"self.action_space: {self.action_space}")
+            # logging.debug(f"self.action_space: {self.action_space}")
             action = np.random.randint(self.action_space)
 
         else:  # Get q_value with highest action
             q_values = self.forward(state.unsqueeze(0))
-            logging.debug(f"q_values: {q_values}")
+            # logging.debug(f"q_values: {q_values}")
             action = torch.argmax(q_values).item()
 
-        logging.debug(f"action: {action}")
+        # logging.debug(f"action: {action}")
 
         return action
 
