@@ -8,6 +8,7 @@ from torch.distributions import Categorical
 from model.replay_buffer import ReplayBuffer, ReplayBufferMulti
 import cv2
 import logging
+import random
 
 class DQNAgent(nn.Module):
     def __init__(self, state_space, action_space, eps=0.99, lr=1e-3, buf_len=1000, gamma=0.99, decay=0.99):
@@ -45,7 +46,6 @@ class DQNAgent(nn.Module):
 
         return x
 
-
     def choose_action(self, state):
         """
 
@@ -53,20 +53,18 @@ class DQNAgent(nn.Module):
         """
         action = None
 
-        if (self.eps > np.random.rand()): # Select random action if eps happened
+        if self.training and self.eps > np.random.rand():  # Select random action if eps happened
             action = np.random.randint(self.action_space)
 
             #print ("selecting random action")
 
-        else: # Get q_value with highest action
+        else:  # Get q_value with highest action
             q_values = self.forward(state)
             action = torch.argmax(q_values).item()
 
             #print ("selecting greedy action")
 
-
         return action
-
 
     def anneal_eps(self):
         if (self.eps > 0.1):
@@ -177,6 +175,7 @@ class DQNConvAgent(nn.Module):
         """
         top_row = x[:, :, 0, :]
         # logging.debug(f"top_row: {top_row}")
+        top_row[top_row != 0] = 1
         x = torch.relu(self.conv1(x))
         x = x.view(x.shape[0], -1)
         top_row = top_row.view(top_row.shape[0], -1)
@@ -208,17 +207,31 @@ class DQNConvAgent(nn.Module):
         Select single action according to q value or random
         """
         action = None
+        top_row = state[0, 0, :]
+        # logging.debug(f"top_row: {top_row}")
+        available_actions = (top_row==0).nonzero().flatten()
+        # logging.debug(f"available_actions: {available_actions}")
+        available_actions = available_actions.tolist()
+        # logging.debug(f"available_actions: {available_actions}")
 
-        if (self.eps > np.random.rand()): # Select random action if eps happened
-            # logging.debug(f"self.action_space: {self.action_space}")
-            action = np.random.randint(self.action_space)
+        if self.training and self.eps > np.random.rand():  # Select random action if eps happened
+            action = random.choice(available_actions)
+            # logging.debug(f"type(action): {type(action)}")
 
-        else:  # Get q_value with highest action
-            q_values = self.forward(state.unsqueeze(0))
+        else:  # Select best available action
+            q_values = self.forward(state.unsqueeze(0)).flatten()
             # logging.debug(f"q_values: {q_values}")
-            action = torch.argmax(q_values).item()
-
-        # logging.debug(f"action: {action}")
+            # action = torch.argmax(q_values).item()
+            _, indices = q_values.sort(descending=True)
+            # logging.debug(f"indices: {indices}")
+            for index in indices:
+                # logging.debug(f"type(index): {type(index)}")
+                # logging.debug(f"index: {index}")
+                index = int(index)
+                # logging.debug(f"type(index): {type(index)}")
+                if index in available_actions:
+                    action = index
+                    break
 
         return action
 

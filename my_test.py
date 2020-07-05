@@ -1,6 +1,7 @@
 import gym
 import numpy as np
 import torch
+import random
 
 # env = gym.make('CartPole-v0')
 # env.reset()
@@ -22,12 +23,19 @@ print(combined_list)
 
 print((3, 2, 5) + (100,))
 
-my_tensor = torch.Tensor(np.arange(9*3)).view(3, 1, 3, 3)
+my_tensor = torch.tensor(np.arange(9*3)).view(3, 1, 3, 3)
 top_row = my_tensor[:, :, 0, :]
 top_row = top_row.view(3, -1)
 print(my_tensor)
 my_tensor = my_tensor.view(3, -1)
 my_concat = torch.cat((my_tensor, top_row), dim=1)
 print(my_concat)
+
+my_list = list()
+# random.choice(my_list)
+
+q_values = torch.tensor([1, 3, 100, -2, 4])
+_, indices = q_values.sort(descending=True)
+print(indices)
 
 
